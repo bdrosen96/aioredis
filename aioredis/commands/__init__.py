@@ -63,6 +63,15 @@ class Redis(GenericCommandsMixin, StringCommandsMixin,
     def __repr__(self):
         return '<Redis {!r}>'.format(self._conn)
 
+    @asyncio.coroutine
+    def acquire_connection(self):
+        return self._conn
+
+    @asyncio.coroutine
+    def _execute(self, *args, **kw):
+        conn = yield from self.acquire_connection()
+        return (yield from conn.execute(*args, **kw))
+
     def close(self):
         self._conn.close()
 
@@ -104,15 +113,15 @@ class Redis(GenericCommandsMixin, StringCommandsMixin,
 
     def echo(self, message, *, encoding=_NOTSET):
         """Echo the given string."""
-        return self._conn.execute('ECHO', message, encoding=encoding)
+        return self._execute('ECHO', message, encoding=encoding)
 
     def ping(self, *, encoding=_NOTSET):
         """Ping the server."""
-        return self._conn.execute('PING', encoding=encoding)
+        return self._execute('PING', encoding=encoding)
 
     def quit(self):
         """Close the connection."""
-        return self._conn.execute('QUIT')
+        return self._execute('QUIT')
 
     def select(self, db):
         """Change the selected database for the current connection.
