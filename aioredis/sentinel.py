@@ -175,10 +175,15 @@ def create_sentinel(sentinels, *, db=None, password=None,
 
     sentinels_connections = []
     for hostname, port in sentinels:
-        sentinel = yield from create_redis((hostname, port), db=db,
-                                           password=password,
-                                           encoding=encoding, loop=loop)
-        sentinels_connections.append(sentinel)
+        try:
+            sentinel = yield from create_redis((hostname, port), db=db,
+                                               password=password,
+                                               encoding=encoding, loop=loop)
+            sentinels_connections.append(sentinel)
+        except OSError:
+            pass
+    if len(sentinels_connections) == 0:
+        raise OSError("Connect call failed for all sentinel hosts: {}".format(sentinels))
     return RedisSentinel(sentinels_connections, min_other_sentinels, loop=loop)
 
 
