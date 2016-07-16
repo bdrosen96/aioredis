@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 
 from .util import coerced_keys_dict
 from .connection import create_connection
@@ -180,8 +181,11 @@ def create_sentinel(sentinels, *, db=None, password=None,
                                                password=password,
                                                encoding=encoding, loop=loop)
             sentinels_connections.append(sentinel)
-        except OSError:
-            pass
+        except OSError as exc:
+            msg = "create sentinel connection failed for {}:{} with: {}".format(hostname,
+                                                                                port,
+                                                                                exc)
+            warnings.warn(msg)
     if len(sentinels_connections) == 0:
         raise OSError("Connect call failed for all sentinel hosts: {}".format(sentinels))
     return RedisSentinel(sentinels_connections, min_other_sentinels, loop=loop)
